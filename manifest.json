@@ -1,7 +1,7 @@
 {
   "name": "Smart Task",
   "short_name": "SmartTask",
-  "start_url": "/",
+  "start_url": "/smart-task/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
