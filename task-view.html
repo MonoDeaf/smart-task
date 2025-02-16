@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task View</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Custom scrollbar styles */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      transition: background 0.2s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Firefox scrollbar */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+    }
+
+    body {
+      font-family: 'Arimo', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0a0a0a;
+      color: #ffffff;
+      line-height: 1.6;
+    }
+    
+    .task-container {
+      width: 100%;
+      min-height: 100%;
+      background-color: #121212;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      margin: 1.5rem;
+    }
+    
+    p {
+      color: #888888;
+      margin: 0 1.5rem 1.5rem 1.5rem;
+      word-wrap: break-word;
+    }
+    
+    .task-metadata {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      padding: 1.5rem;
+      border-top: 1px solid #1e1e1e;
+      margin-top: auto;
+    }
+    
+    .metadata-item span:first-child {
+      color: #888888;
+      font-size: 0.9rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .metadata-item span:last-child {
+      font-size: 1rem;
+    }
+
+    .timer-section {
+      padding: 1.5rem;
+      border-top: 1px solid #1e1e1e;
+      width: 100%;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    #timer-input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #1e1e1e;
+      padding: 0.5rem;
+      border-radius: 4px;
+      color: white;
+      width: 80px;
+      font-size: 1rem;
+    }
+
+    #start-timer {
+      background: #43b581;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: opacity 0.2s ease;
+    }
+
+    #start-timer:hover {
+      opacity: 0.9;
+    }
+
+    #start-timer.running {
+      background: #f04747;
+    }
+
+    .timer-display-container {
+      position: relative;
+      width: 100%;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    #timer-display {
+      font-size: 5rem;
+      font-weight: 500;
+      color: white;
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(180deg, 
+        rgba(255,255,255,1) 0%,
+        rgba(255,255,255,0.8) 20%,
+        rgba(255,255,255,0.4) 40%,
+        rgba(255,255,255,0.1) 60%,
+        rgba(255,255,255,0) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .timer-display-container::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 90%;
+      background: linear-gradient(
+        transparent,
+        rgba(18, 18, 18, 0.7) 20%,
+        rgba(18, 18, 18, 0.9) 40%,
+        rgba(18, 18, 18, 0.98) 70%,
+        #121212 100%
+      );
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="task-container">
+    <h1 id="task-title"></h1>
+    <p id="task-description"></p>
+    
+    <div class="timer-section">
+      <div class="timer-controls">
+        <input type="number" id="timer-input" value="30" min="1" max="180">
+        <span style="color: #888;">minutes</span>
+        <button id="start-timer">Start Timer</button>
+      </div>
+      <div class="timer-display-container">
+        <div id="timer-display">30:00</div>
+      </div>
+    </div>
+    
+    <div class="task-metadata">
+      <div class="metadata-item">
+        <span>Status</span>
+        <span id="task-status"></span>
+      </div>
+      <div class="metadata-item">
+        <span>Created</span>
+        <span id="task-created"></span>
+      </div>
+      <div class="metadata-item">
+        <span>Completed</span>
+        <span id="task-completed"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get task data from URL parameters
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('task-title').textContent = params.get('title') || 'Untitled Task';
+    document.getElementById('task-description').textContent = params.get('description') || 'No description provided';
+    document.getElementById('task-status').textContent = params.get('status') || 'Unknown';
+    document.getElementById('task-created').textContent = params.get('created') || 'Unknown';
+    document.getElementById('task-completed').textContent = params.get('completed') || 'Not completed';
+
+    // Timer functionality
+    const timerInput = document.getElementById('timer-input');
+    const startButton = document.getElementById('start-timer');
+    const timerDisplay = document.getElementById('timer-display');
+    let timerInterval;
+    let timeLeft;
+
+    function updateTimerDisplay(minutes, seconds) {
+      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+      if (timerInterval) {
+        // Stop the timer
+        clearInterval(timerInterval);
+        timerInterval = null;
+        startButton.textContent = 'Start Timer';
+        startButton.classList.remove('running');
+        timerInput.disabled = false;
+        
+        // Reset display to input value
+        const minutes = parseInt(timerInput.value);
+        updateTimerDisplay(minutes, 0);
+        return;
+      }
+
+      // Start the timer
+      timeLeft = parseInt(timerInput.value) * 60;
+      timerInput.disabled = true;
+      startButton.textContent = 'Stop Timer';
+      startButton.classList.add('running');
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        
+        updateTimerDisplay(minutes, seconds);
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          startButton.textContent = 'Start Timer';
+          startButton.classList.remove('running');
+          timerInput.disabled = false;
+          
+          // Notify user
+          new Notification('Timer Complete!', {
+            body: `Time's up for task: ${params.get('title')}`,
+            icon: '/3079254-512.png'
+          });
+        }
+      }, 1000);
+    }
+
+    // Update display when input changes
+    timerInput.addEventListener('input', () => {
+      const minutes = parseInt(timerInput.value);
+      updateTimerDisplay(minutes, 0);
+    });
+
+    startButton.addEventListener('click', startTimer);
+
+    // Request notification permission
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    window.focus();
+  </script>
+</body>
+</html>

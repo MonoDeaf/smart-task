@@ -5,6 +5,7 @@ export class UIManager {
     this.tasksChart = null;
     this.selectedBackground = null;
     this.charts = null;
+    this.globalCharts = null;
     this.isMobileMenuOpen = false;
   }
 
@@ -307,15 +308,18 @@ export class UIManager {
     document.querySelector(`[data-page="${page}"]`).classList.add('active');
     
     this.currentPage = page;
-  
+
     // Show/hide group cards based on page
     const groupStats = document.getElementById('group-stats');
     if (groupStats) {
       groupStats.style.display = page === 'home' ? 'flex' : 'none';
     }
-  
+
     if (page === 'home') {
       this.updateHomePage();
+    } else if (page === 'graphs') {
+      // Always reinitialize the graphs page when navigating to it
+      this.updateGraphsPage();
     }
   }
 
@@ -373,8 +377,15 @@ export class UIManager {
               <path fill="currentColor" d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
             </svg>
             <div class="dot-menu-content">
+              <button class="rename-group" data-group-id="${group.id}">Rename</button>
+              <button class="change-background" data-group-id="${group.id}">Change Background</button>
               <button class="delete-group" data-group-id="${group.id}">Delete Group</button>
             </div>
+          </div>
+          <div class="corner-arrow">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M5 19v-6h4.28l-6-6L4.72 5.28l6 6V7h6v12z" transform="rotate(45 12 12)"/>
+            </svg>
           </div>
           <div style="position: relative; z-index: 1;">
             <h3 style="color: ${textColor}; opacity: 1 !important; font-weight: 600;">${group.name}</h3>
@@ -388,6 +399,20 @@ export class UIManager {
         dotMenu.addEventListener('click', (e) => {
           e.stopPropagation();
           dotMenuContent.classList.toggle('active');
+        });
+
+        // Add rename functionality
+        const renameBtn = groupCard.querySelector('.rename-group');
+        renameBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showRenameDialog(group.id, group.name);
+        });
+
+        // Add change background functionality
+        const changeBackgroundBtn = groupCard.querySelector('.change-background');
+        changeBackgroundBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showChangeBackgroundDialog(group.id);
         });
 
         const deleteBtn = groupCard.querySelector('.delete-group');
@@ -415,6 +440,184 @@ export class UIManager {
     }
 
     groupStats.style.display = 'flex';
+    if (this.currentPage === 'graphs') {
+      this.updateGraphsPage();
+    }
+  }
+
+  showRenameDialog(groupId, currentName) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'confirmation-dialog';
+    dialog.innerHTML = `
+      <h3>Rename Group</h3>
+      <div class="form-group">
+        <input type="text" id="new-group-name" value="${currentName}" placeholder="Enter new name">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn secondary" id="cancel-rename">Cancel</button>
+        <button class="btn" id="confirm-rename">Save</button>
+      </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    const input = dialog.querySelector('#new-group-name');
+    input.select();
+
+    dialog.querySelector('#cancel-rename').addEventListener('click', () => {
+      dialog.close();
+      dialog.remove();
+    });
+
+    dialog.querySelector('#confirm-rename').addEventListener('click', () => {
+      const newName = input.value.trim();
+      if (newName) {
+        const group = this.taskManager.groups.get(groupId);
+        if (group) {
+          group.name = newName;
+          this.taskManager.saveData();
+          this.updateHomePage();
+          if (this.taskManager.currentGroup && this.taskManager.currentGroup.id === groupId) {
+            document.getElementById('group-title').textContent = newName;
+          }
+        }
+      }
+      dialog.close();
+      dialog.remove();
+    });
+  }
+
+  showChangeBackgroundDialog(groupId) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'confirmation-dialog';
+    dialog.innerHTML = `
+      <h3>Change Background</h3>
+      <div class="group-customization">
+        <div class="color-picker">
+          <h4>Choose group color</h4>
+          <div class="color-options">
+            ${this.getColorOptions()}
+          </div>
+        </div>
+        <div class="image-picker">
+          <h4>Choose group Image</h4>
+          <div class="image-grid" id="change-background-images"></div>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn secondary" id="cancel-background">Cancel</button>
+        <button class="btn" id="confirm-background">Save</button>
+      </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    this.setupImageGrid(dialog.querySelector('#change-background-images'));
+    this.setupColorPicker(dialog.querySelector('.color-options'));
+
+    dialog.querySelector('#cancel-background').addEventListener('click', () => {
+      dialog.close();
+      dialog.remove();
+    });
+
+    dialog.querySelector('#confirm-background').addEventListener('click', () => {
+      if (this.selectedBackground) {
+        const group = this.taskManager.groups.get(groupId);
+        if (group) {
+          group.background = this.selectedBackground;
+          this.taskManager.saveData();
+          this.updateHomePage();
+        }
+      }
+      dialog.close();
+      dialog.remove();
+    });
+  }
+
+  getColorOptions() {
+    const colors = [
+      '#FF6B6B', '#FFC069', '#4ECDC4', '#45B7D1', '#96CEB4',
+      '#FFB3B3', '#BFACE2', '#A6D1E6', '#FFDEB4', '#B5D5C5',
+      '#F8C4B4', '#E8A0BF', '#B4E4FF', '#95BDFF', '#B4CDE6'
+    ];
+    
+    return colors.map(color => `
+      <button type="button" class="color-option" data-color="${color}" style="background-color: ${color}"></button>
+    `).join('');
+  }
+
+  setupImageGrid(imageGrid) {
+    const imageOptions = [
+      'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1624359136353-f60129a367b9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1634655377962-e6e7b446e7e9?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1635776062764-e025521e3df3?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1635776062360-af423602aff3?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1639493115942-a51a4c72f3c3?q=80&w=2080&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/flagged/photo-1567934150921-7632371abb32?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1597423244036-ef5020e83f3c?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=2666&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1541512416146-3cf58d6b27cc?q=80&w=2674&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1599054735388-bcb07bdd3574?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1604871082903-5458d164167a?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1627282058750-2b9ce74b6248?q=80&w=2616&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1739477021967-e14dc3938e56?q=80&w=2671&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1664309793544-f1d21a3a25d1?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1739437455408-66aab68b5c0d?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1739367156315-22b8ce82b23b?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1728318781902-dc8f23961e95?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://images.unsplash.com/photo-1739057736231-3577bfc1a1b9?q=80&w=2650&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+    ];
+
+    const imageGridHTML = imageOptions.map(url => `
+      <button type="button" class="image-option" data-url="${url}">
+        <img src="${url}" alt="Background option">
+      </button>
+    `).join('');
+    
+    imageGrid.innerHTML = imageGridHTML;
+
+    // Setup image selection immediately after creating elements
+    const imageButtons = imageGrid.querySelectorAll('.image-option');
+    imageButtons.forEach(option => {
+      option.addEventListener('click', () => {
+        imageButtons.forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        this.selectedBackground = {
+          type: 'image',
+          value: option.dataset.url
+        };
+      });
+    });
+  }
+
+  setupColorPicker(colorOptions) {
+    const colors = [
+      '#FF6B6B', '#FFC069', '#4ECDC4', '#45B7D1', '#96CEB4',
+      '#FFB3B3', '#BFACE2', '#A6D1E6', '#FFDEB4', '#B5D5C5',
+      '#F8C4B4', '#E8A0BF', '#B4E4FF', '#95BDFF', '#B4CDE6'
+    ];
+    
+    const colorOptionsHTML = colors.map(color => `
+      <button type="button" class="color-option" data-color="${color}" style="background-color: ${color}"></button>
+    `).join('');
+    
+    colorOptions.innerHTML = colorOptionsHTML;
+
+    const colorButtons = colorOptions.querySelectorAll('.color-option');
+    colorButtons.forEach(option => {
+      option.addEventListener('click', () => {
+        colorButtons.forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        this.selectedBackground = {
+          type: 'color',
+          value: option.dataset.color
+        };
+      });
+    });
   }
 
   showDeleteConfirmation(groupId) {
@@ -448,6 +651,22 @@ export class UIManager {
   updateGroupPage(groupId) {
     const group = this.taskManager.groups.get(groupId);
     if (!group) return;
+
+    const groupHeader = document.querySelector('.group-header');
+    groupHeader.style.backgroundColor = 'var(--bg-secondary)';
+    
+    // Set the background based on group's background settings
+    if (group.background) {
+      if (group.background.type === 'image') {
+        groupHeader.style.backgroundImage = `url(${group.background.value})`;
+        groupHeader.style.backgroundSize = 'cover';
+        groupHeader.style.backgroundPosition = 'center';
+      } else {
+        groupHeader.style.backgroundColor = group.background.value;
+        // Remove any existing background image
+        groupHeader.style.backgroundImage = 'none';
+      }
+    }
 
     document.getElementById('group-title').textContent = group.name;
     
@@ -497,11 +716,17 @@ export class UIManager {
           <h4>${task.title}</h4>
           ${task.description ? `<p>${task.description}</p>` : ''}
         </div>
-        <button class="task-delete-btn" data-task-id="${task.id}" title="Delete task">
-          <svg viewBox="0 0 24 24">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-        </button>
+        <div class="task-actions">
+          <button class="task-view-btn" data-task-id="${task.id}" title="View task">
+            <img src="/3079254-512.png" alt="View task">
+            Open
+          </button>
+          <button class="task-delete-btn" data-task-id="${task.id}" title="Delete task">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+          </button>
+        </div>
       `;
 
       // Add checkbox event listener
@@ -509,6 +734,11 @@ export class UIManager {
         this.taskManager.toggleTask(groupId, task.id);
         taskElement.classList.toggle('completed', e.target.checked);
         setTimeout(() => this.updateGroupPage(groupId), 300);
+      });
+
+      // Add view button event listener
+      taskElement.querySelector('.task-view-btn').addEventListener('click', () => {
+        this.showTaskView(task);
       });
 
       // Add delete button event listener
@@ -575,6 +805,24 @@ export class UIManager {
     });
   }
 
+  showTaskView(task) {
+    // Create URL parameters with task data
+    const params = new URLSearchParams({
+      title: task.title,
+      description: task.description || 'No description provided',
+      status: task.completed ? 'Completed' : 'In Progress',
+      created: new Date(task.createdAt).toLocaleString(),
+      completed: task.completedAt ? new Date(task.completedAt).toLocaleString() : 'Not completed'
+    });
+  
+    // Open in new window with specific dimensions and position
+    const taskWindow = window.open(
+      `/task-view.html?${params.toString()}`,
+      '_blank',
+      'width=300,height=400,resizable=yes,scrollbars=yes,alwaysOnTop=yes'
+    );
+  }
+
   updateCharts(groupId) {
     const stats = this.taskManager.getGroupStats(groupId);
   
@@ -623,6 +871,13 @@ export class UIManager {
       }
     };
 
+    // Calculate total tasks and uncompleted tasks for each date
+    const uncompletedData = stats.map(stat => {
+      const totalTasksAtDate = Array.from(this.taskManager.groups.get(groupId).tasks.values())
+        .filter(task => new Date(task.createdAt) <= new Date(stat.date)).length;
+      return totalTasksAtDate - stat.completed;
+    });
+
     this.charts.completed = new Chart('completedChart', {
       ...chartConfig,
       data: {
@@ -640,7 +895,7 @@ export class UIManager {
       data: {
         labels: stats.map(stat => stat.date),
         datasets: [{
-          data: stats.map(stat => stats[0].total - stat.completed),
+          data: uncompletedData,
           borderColor: '#f04747',
           tension: 0.4
         }]
@@ -658,6 +913,100 @@ export class UIManager {
         }]
       }
     });
+  }
+
+  updateGraphsPage() {
+    const stats = this.taskManager.getTotalStats();
+
+    // Update stat cards
+    document.getElementById('total-tasks').textContent = stats.total;
+    document.getElementById('total-completed').textContent = stats.completed;
+    document.getElementById('total-uncompleted').textContent = stats.uncompleted;
+
+    const allStats = this.taskManager.getAllTaskStats();
+
+    // Destroy existing charts before creating new ones
+    if (this.globalCharts) {
+      Object.values(this.globalCharts).forEach(chart => {
+        if (chart) {
+          chart.destroy();
+        }
+      });
+    }
+
+    this.globalCharts = {};
+
+    // Initialize chart configuration
+    const chartConfig = {
+      type: 'line',
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    };
+
+    // Ensure canvas elements exist before creating charts
+    const allTasksChart = document.getElementById('allTasksChart');
+    const completionRateChart = document.getElementById('completionRateChart');
+    const creationTrendChart = document.getElementById('creationTrendChart');
+
+    // Create new charts only if canvas elements exist
+    if (allTasksChart) {
+      this.globalCharts.allTasks = new Chart(allTasksChart, {
+        ...chartConfig,
+        data: {
+          labels: allStats.map(stat => stat.date),
+          datasets: [{
+            data: allStats.map(stat => stat.total),
+            borderColor: '#7289da',
+            tension: 0.4
+          }]
+        }
+      });
+    }
+
+    if (completionRateChart) {
+      this.globalCharts.completionRate = new Chart(completionRateChart, {
+        ...chartConfig,
+        data: {
+          labels: allStats.map(stat => stat.date),
+          datasets: [{
+            data: allStats.map(stat => 
+              stat.total > 0 ? (stat.completed / stat.total * 100).toFixed(1) : 0
+            ),
+            borderColor: '#faa61a',
+            tension: 0.4
+          }]
+        }
+      });
+    }
+
+    if (creationTrendChart) {
+      this.globalCharts.creationTrend = new Chart(creationTrendChart, {
+        ...chartConfig,
+        data: {
+          labels: allStats.map(stat => stat.date),
+          datasets: [{
+            data: allStats.map(stat => stat.created),
+            borderColor: '#ff6b6b',
+            tension: 0.4
+          }]
+        }
+      });
+    }
   }
 
   loadUserSettings() {

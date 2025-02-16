@@ -110,19 +110,24 @@ export class TaskManager {
     }).reverse();
 
     const stats = lastWeek.map(date => {
+      const tasksUpToDate = Array.from(group.tasks.values()).filter(task => 
+        new Date(task.createdAt) <= date
+      );
+
       const completed = Array.from(group.tasks.values()).filter(task => 
         task.completedAt && 
-        task.completedAt.toDateString() === date.toDateString()
+        new Date(task.completedAt).toDateString() === date.toDateString()
       ).length;
 
       const created = Array.from(group.tasks.values()).filter(task =>
-        task.createdAt.toDateString() === date.toDateString()
+        new Date(task.createdAt).toDateString() === date.toDateString()
       ).length;
 
       return {
         date: date.toLocaleDateString(),
         completed,
-        created
+        created,
+        total: tasksUpToDate.length
       };
     });
 
@@ -166,5 +171,67 @@ export class TaskManager {
   deleteGroup(groupId) {
     this.groups.delete(groupId);
     this.saveData();
+  }
+
+  getAllTaskStats() {
+    const today = new Date();
+    const lastWeek = new Array(7).fill(0).map((_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      return date;
+    }).reverse();
+
+    const stats = lastWeek.map(date => {
+      let completed = 0;
+      let created = 0;
+      let total = 0;
+
+      this.groups.forEach(group => {
+        Array.from(group.tasks.values()).forEach(task => {
+          if (task.completedAt && 
+              task.completedAt.toDateString() === date.toDateString()) {
+            completed++;
+          }
+          if (task.createdAt.toDateString() === date.toDateString()) {
+            created++;
+          }
+          if (task.createdAt <= date) {
+            total++;
+          }
+        });
+      });
+
+      return {
+        date: date.toLocaleDateString(),
+        completed,
+        created,
+        total
+      };
+    });
+
+    return stats;
+  }
+
+  getTotalStats() {
+    let totalTasks = 0;
+    let completedTasks = 0;
+    let uncompletedTasks = 0;
+
+    this.groups.forEach(group => {
+      group.tasks.forEach(task => {
+        totalTasks++;
+        if (task.completed) {
+          completedTasks++;
+        } else {
+          uncompletedTasks++;
+        }
+      });
+    });
+
+    return {
+      total: totalTasks,
+      completed: completedTasks,
+      uncompleted: uncompletedTasks
+    };
   }
 }

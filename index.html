@@ -4,6 +4,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Task</title>
   <link rel="manifest" href="/smart-task/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="module" src="app.js"></script>
@@ -20,7 +23,7 @@
 
   <div class="container">
     <nav class="sidebar">
-      <ul>
+      <ul class="top-menu">
         <li><a href="#" class="active" data-page="home" data-tooltip="Home">
           <svg viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
@@ -31,6 +34,13 @@
             <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
           </svg>
         </a></li>
+        <li><a href="#" data-page="graphs" data-tooltip="Analytics">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
+          </svg>
+        </a></li>
+      </ul>
+      <ul class="bottom-menu">
         <li><a href="#" data-page="settings" data-tooltip="Settings">
           <svg viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
@@ -40,11 +50,8 @@
     </nav>
     
     <main>
-      <header>
-        <h1 id="welcome">Welcome, User</h1>
-      </header>
-      
       <div id="home-page" class="page active">
+        <h1 id="welcome">Welcome, User</h1>
         <h1>Smart Task</h1>
         <p>Create a group to get started</p>
       </div>
@@ -67,6 +74,40 @@
             
             <h3>Completed</h3>
             <div id="complete-tasks"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="graphs-page" class="page">
+        <h2>Task Analytics</h2>
+        <div class="tasks-container">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total Tasks</h3>
+              <div class="stat-value" id="total-tasks">0</div>
+            </div>
+            <div class="stat-card">
+              <h3>Completed Tasks</h3>
+              <div class="stat-value" id="total-completed">0</div>
+            </div>
+            <div class="stat-card">
+              <h3>Uncompleted Tasks</h3>
+              <div class="stat-value" id="total-uncompleted">0</div>
+            </div>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h3>All Tasks Overview</h3>
+              <canvas id="allTasksChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Completion Rate</h3>
+              <canvas id="completionRateChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Task Creation Trend</h3>
+              <canvas id="creationTrendChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -142,7 +183,7 @@
             <button type="button" class="color-option" data-color="#95BDFF" style="background-color: #95BDFF"></button>
             <button type="button" class="color-option" data-color="#B4CDE6" style="background-color: #B4CDE6"></button>
           </div>
-          <p style="color: #333333; font-size: 0.8rem; margin-top: 0.5rem;">[Shift] + [Scroll] to see more</p>
+          <p style="color: #444444; font-size: 0.8rem; margin-top: 0.5rem;">[Shift] + [Scroll] to see more</p>
         </div>
 
         <div class="image-picker">
@@ -157,6 +198,11 @@
       </div>
     </form>
   </dialog>
+  <div class="corner-arrow">
+    <svg viewBox="0 0 24 24" width="20" height="20">
+      <path fill="currentColor" d="M19 5v2h-4V5h4M9 5v6h10V5h2v6h-2v2H9v-2H5V5h4m10 8v6h-4v-6h4M9 17v2h10v-2h2v2h-2v2H9v-2H5v-2h4z"/>
+    </svg>
+  </div>
   <script>
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/smart-task/sw.js")
