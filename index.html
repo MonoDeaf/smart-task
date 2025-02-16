@@ -310,11 +310,21 @@ window.addEventListener("beforeinstallprompt", (event) => {
     deferredPrompt = event; // Store event for later use
 });
 
-// Check for install flag in the URL
-if (window.location.search.includes("install=true")) {
-    setTimeout(() => { // Delay a bit to ensure `beforeinstallprompt` fires
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+
+    // Show an install button when the event is available
+    const installButton = document.createElement("button");
+    installButton.textContent = "Install Task Tracker";
+    installButton.style.padding = "10px 20px";
+    installButton.style.fontSize = "16px";
+    installButton.style.cursor = "pointer";
+    document.body.appendChild(installButton);
+
+    installButton.addEventListener("click", () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt();
+            deferredPrompt.prompt(); // Show install prompt
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === "accepted") {
                     console.log("User installed the app 🎉");
@@ -322,12 +332,12 @@ if (window.location.search.includes("install=true")) {
                     console.log("User dismissed the install prompt ❌");
                 }
                 deferredPrompt = null;
+                installButton.remove(); // Remove the button after clicking
             });
-        } else {
-            console.log("❌ Install prompt not available.");
         }
-    }, 1500); // Slight delay to wait for the event to trigger
-}
+    });
+});
+    
 </script>
 </body>
 </html>
