@@ -1,8 +1,54 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+}
+
+/* Custom text selection */
+::selection {
+  background: #a9c1c2;
+  color: inherit;
+}
+
+::-moz-selection {
+  background: #a9c1c2;
+  color: inherit;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme enhancements */
 :root {
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #121212;
   --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
+  --text-secondary: #888888;
   --accent: #7289da;
   --success: #43b581;
   --danger: #f04747;
@@ -17,14 +63,9 @@ body.light-mode {
   --border-color: #e0e0e0;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* Global styles */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Arimo', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Arimo', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
@@ -38,21 +79,23 @@ body {
 .sidebar {
   width: 60px;
   background-color: var(--bg-secondary);
-  padding: 0.5rem 4px;
+  padding: 4px 4px;
   border-right: 1px solid var(--border-color);
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
   z-index: 999;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.logo {
-  font-size: 2.5rem;
-  font-weight: bold;
-  margin-bottom: 3rem;
-  padding-left: 1rem;
-  color: var(--text-primary);
+.sidebar .top-menu,
+.sidebar .bottom-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .sidebar ul {
@@ -136,6 +179,7 @@ main {
 
 header {
   margin-bottom: 2rem;
+  margin-top: 1rem;
 }
 
 h2 {
@@ -267,22 +311,24 @@ h2 {
   padding-bottom: 280px; 
 }
 
-header h1 {
+#home-page #welcome {
   font-size: 1rem;
   color: var(--text-secondary);
+  margin-bottom: 2rem;
 }
 
-#home-page h1 {
-  font-size: 8rem;
-  font-weight: 600;
+#home-page h1:not(#welcome) {
+  font-size: 5rem;
+  font-weight: 700;
   line-height: 1;
-  margin-top: 4rem;
-  margin-bottom: 1rem;
+  margin-top: 0rem;
+  margin-bottom: 0.5rem;
 }
 
 #home-page p {
   font-size: 1rem;
   color: var(--text-secondary);
+  opacity: 0.5;
   margin-bottom: 2rem;
 }
 
@@ -291,6 +337,52 @@ header h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  padding: 3rem;
+  background-color: var(--bg-secondary);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+  margin: -2rem -2rem 2rem -2rem;
+  border-radius: 0;
+}
+
+.group-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  pointer-events: none;
+}
+
+.group-header h2 {
+  color: white;
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .group-header {
+    margin: -1rem -1rem 2rem -1rem;
+    padding: 2rem;
+    min-height: 160px;
+  }
+  
+  .group-header h2 {
+    font-size: 2rem;
+  }
+}
+
+.tasks-list {
+  background-color: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .stats-grid {
@@ -305,6 +397,7 @@ header h1 {
   border-radius: 8px;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border-color);
 }
 
 .stat-card h3 {
@@ -321,15 +414,15 @@ header h1 {
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  margin-top: 2rem;
 }
 
 .chart-card {
   background-color: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .chart-card h3 {
@@ -348,12 +441,6 @@ header h1 {
   flex: 1;
 }
 
-.tasks-list {
-  background-color: var(--bg-secondary);
-  padding: 1.5rem;
-  border-radius: 8px;
-}
-
 .tasks-header {
   display: flex;
   justify-content: space-between;
@@ -363,23 +450,45 @@ header h1 {
 
 .tasks-actions {
   display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+#incomplete-tasks,
+#complete-tasks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .task-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.5rem;
   background-color: var(--bg-primary);
-  border-radius: 6px;
-  margin-bottom: 0.5rem;
-  transition: opacity 0.2s ease;
+  border-radius: 12px;
+  transition: all 0.2s ease;
   position: relative;
+  height: 100%;
+  min-height: 120px;
 }
 
 .task-item .task-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-item .task-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
 }
 
 .task-delete-btn {
@@ -393,11 +502,13 @@ header h1 {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
 }
 
 .task-delete-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   fill: currentColor;
 }
 
@@ -713,10 +824,63 @@ dialog[open] {
   position: relative;
 }
 
-.dot-menu {
+.corner-arrow {
   position: absolute;
   top: 12px;
   right: 12px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 3;
+}
+
+.corner-arrow svg {
+  width: 20px;
+  height: 20px;
+  transform: scale(1.2);
+  display: none;
+}
+
+.corner-arrow {
+  background-image: url('/828802-512.png');
+  background-size: 24px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.group-card:hover .corner-arrow {
+  opacity: 1;
+}
+
+body.light-mode .corner-arrow {
+  filter: none; 
+}
+
+.corner-arrow {
+  filter: invert(1); 
+}
+
+.group-card[style*="background-color"], 
+.group-card[style*="background: white"], 
+.group-card[style*="background:#"], 
+.group-card[style*="background: #"] {
+  .corner-arrow {
+    filter: none;
+  }
+}
+
+.group-card[style*="background-image"] .corner-arrow {
+  filter: invert(1);
+}
+
+.dot-menu {
+  position: absolute;
+  top: 12px;
+  left: 12px;  
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -727,10 +891,6 @@ dialog[open] {
   opacity: 0;
   transition: opacity 0.2s ease;
   z-index: 3;
-}
-
-body.light-mode .dot-menu {
-  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .dot-menu svg {
@@ -746,13 +906,14 @@ body.light-mode .dot-menu {
 .dot-menu-content {
   position: absolute;
   top: 0;
-  right: 2.5rem;
+  left: 2.5rem;  
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
   z-index: 10;
   display: none;
+  min-width: 180px;
 }
 
 .dot-menu-content.active {
@@ -760,18 +921,23 @@ body.light-mode .dot-menu {
 }
 
 .dot-menu-content button {
-  background: white;
+  background: transparent;
   border: none;
-  color: var(--danger);
-  padding: 0.5rem 1rem;
+  color: #888;
+  padding: 0.75rem 1rem;
   width: 100%;
   text-align: left;
   cursor: pointer;
   border-radius: 4px;
+  font-size: 0.9rem;
 }
 
 .dot-menu-content button:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dot-menu-content .delete-group {
+  color: var(--danger);
 }
 
 .settings-section {
@@ -948,7 +1114,15 @@ body.light-mode .menu-toggle img {
     margin-left: 0;
   }
 
-  #home-page h1 {
+  #home-page {
+    padding-top: 2rem;
+  }
+
+  #home-page #welcome {
+    margin-top: 3.5rem;
+  }
+
+  #home-page h1:not(#welcome) {
     font-size: 4rem; 
   }
 
@@ -1073,5 +1247,127 @@ body.light-mode .menu-toggle img {
 
   .task-delete-btn {
     opacity: 0.7;
+  }
+
+  header {
+    margin-top: 3.5rem; /* Added more space at the top on mobile */
+  }
+}
+
+@media (max-width: 768px) {
+  #incomplete-tasks,
+  #complete-tasks {
+    grid-template-columns: 1fr;
+  }
+
+  .task-item {
+    min-height: 100px;
+  }
+}
+
+/* Add smooth scrolling to html */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhance focus styles */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Add smooth transitions to interactive elements */
+button, 
+input, 
+a {
+  transition: all 0.2s ease;
+}
+
+.task-view-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  opacity: 1;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.task-view-btn img {
+  width: 16px;
+  height: 16px;
+  filter: invert(1);
+}
+
+body.light-mode .task-view-btn img {
+  filter: invert(0);
+}
+
+.task-view-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Task View Dialog Styles */
+.task-view-dialog {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 24px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.task-view-dialog h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.task-view-dialog p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.task-metadata {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.metadata-item span:first-child {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .task-view-btn {
+    opacity: 0.7;
+  }
+  
+  .task-metadata {
+    flex-direction: column;
+    gap: 1rem;
   }
 }
