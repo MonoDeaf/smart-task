@@ -384,12 +384,11 @@ export class UIManager {
           if (background.type === 'color') {
             groupCard.style.backgroundColor = background.value;
           } else if (background.type === 'image') {
-            groupCard.style.backgroundImage = `url(${background.value})`;
-            groupCard.style.backgroundSize = 'cover';
-            groupCard.style.backgroundPosition = 'center';
+            groupCard.style.setProperty('--bg-image', `url(${background.value})`);
+            groupCard.style.backgroundImage = 'none';
             groupCard.innerHTML = `
               <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-                          background: rgba(0,0,0,0.3); border-radius: inherit;"></div>
+                          background: rgba(0,0,0,0.3); border-radius: inherit; z-index: 1;"></div>
             `;
           }
         }
@@ -776,25 +775,6 @@ export class UIManager {
       }
     });
 
-    const statsContainer = document.createElement('div');
-    statsContainer.className = 'stats-grid';
-    statsContainer.innerHTML = `
-      <div class="stat-card">
-        <h3>Total Tasks</h3>
-        <div class="stat-value">${totalTasks}</div>
-      </div>
-      <div class="stat-card">
-        <h3>Completed Tasks</h3>
-        <div class="stat-value">${completedCount}</div>
-      </div>
-      <div class="stat-card">
-        <h3>Uncompleted Tasks</h3>
-        <div class="stat-value">${uncompletedCount}</div>
-      </div>
-    `;
-
-    tasksContainer.appendChild(statsContainer);
-
     this.updateCharts(groupId);
   }
 
@@ -853,20 +833,20 @@ export class UIManager {
   
     this.charts = {};
 
-    const chartContainer = document.querySelector('.chart-grid') || document.createElement('div');
+    const chartContainer = document.createElement('div');
     chartContainer.className = 'chart-grid';
     chartContainer.innerHTML = `
       <div class="chart-card">
         <h3>Completed Tasks</h3>
-        <canvas id="completedChart"></canvas>
+        <canvas id="groupCompletedChart"></canvas>
       </div>
       <div class="chart-card">
         <h3>Uncompleted Tasks</h3>
-        <canvas id="uncompletedChart"></canvas>
+        <canvas id="groupUncompletedChart"></canvas>
       </div>
       <div class="chart-card">
         <h3>Created Tasks</h3>
-        <canvas id="createdChart"></canvas>
+        <canvas id="groupCreatedChart"></canvas>
       </div>
     `;
 
@@ -899,38 +879,44 @@ export class UIManager {
       return totalTasksAtDate - stat.completed;
     });
 
-    this.charts.completed = new Chart('completedChart', {
+    this.charts.completed = new Chart('groupCompletedChart', {
       ...chartConfig,
       data: {
         labels: stats.map(stat => stat.date),
         datasets: [{
           data: stats.map(stat => stat.completed),
           borderColor: '#43b581',
-          tension: 0.4
+          backgroundColor: 'rgba(67, 181, 129, 0.2)',
+          tension: 0.4,
+          fill: true
         }]
       }
     });
 
-    this.charts.uncompleted = new Chart('uncompletedChart', {
+    this.charts.uncompleted = new Chart('groupUncompletedChart', {
       ...chartConfig,
       data: {
         labels: stats.map(stat => stat.date),
         datasets: [{
           data: uncompletedData,
           borderColor: '#f04747',
-          tension: 0.4
+          backgroundColor: 'rgba(240, 71, 71, 0.2)',
+          tension: 0.4,
+          fill: true
         }]
       }
     });
 
-    this.charts.created = new Chart('createdChart', {
+    this.charts.created = new Chart('groupCreatedChart', {
       ...chartConfig,
       data: {
         labels: stats.map(stat => stat.date),
         datasets: [{
           data: stats.map(stat => stat.created),
           borderColor: '#7289da',
-          tension: 0.4
+          backgroundColor: 'rgba(114, 137, 218, 0.2)',
+          tension: 0.4,
+          fill: true
         }]
       }
     });
@@ -943,21 +929,15 @@ export class UIManager {
     document.getElementById('total-tasks').textContent = stats.total;
     document.getElementById('total-completed').textContent = stats.completed;
     document.getElementById('total-uncompleted').textContent = stats.uncompleted;
+    document.getElementById('completion-rate').textContent = `${stats.completionRate}%`;
+    document.getElementById('most-active-day').textContent = stats.mostActiveDay || 'N/A';
+    document.getElementById('avg-completion-time').textContent = stats.avgCompletionTime || 'N/A';
+    document.getElementById('peak-activity-time').textContent = stats.peakActivityTime || 'N/A';
+    document.getElementById('longest-streak').textContent = `${stats.longestStreak} days`;
 
     const allStats = this.taskManager.getAllTaskStats();
 
-    // Destroy existing charts before creating new ones
-    if (this.globalCharts) {
-      Object.values(this.globalCharts).forEach(chart => {
-        if (chart) {
-          chart.destroy();
-        }
-      });
-    }
-
-    this.globalCharts = {};
-
-    // Initialize chart configuration
+    // Create new charts if they don't exist, otherwise update existing ones
     const chartConfig = {
       type: 'line',
       options: {
@@ -979,55 +959,88 @@ export class UIManager {
       }
     };
 
-    // Ensure canvas elements exist before creating charts
-    const allTasksChart = document.getElementById('allTasksChart');
-    const completionRateChart = document.getElementById('completionRateChart');
-    const creationTrendChart = document.getElementById('creationTrendChart');
+    // Update or create each chart
+    ['allTasksChart', 'completionRateChart', 'creationTrendChart', 'activityHeatChart', 'weekdayActivityChart'].forEach(chartId => {
+      const ctx = document.getElementById(chartId);
+      if (!ctx) return;
 
-    // Create new charts only if canvas elements exist
-    if (allTasksChart) {
-      this.globalCharts.allTasks = new Chart(allTasksChart, {
-        ...chartConfig,
-        data: {
-          labels: allStats.map(stat => stat.date),
-          datasets: [{
-            data: allStats.map(stat => stat.total),
-            borderColor: '#7289da',
-            tension: 0.4
-          }]
-        }
-      });
-    }
+      // Destroy existing chart if it exists
+      if (this.globalCharts?.[chartId]) {
+        this.globalCharts[chartId].destroy();
+      }
 
-    if (completionRateChart) {
-      this.globalCharts.completionRate = new Chart(completionRateChart, {
-        ...chartConfig,
-        data: {
-          labels: allStats.map(stat => stat.date),
-          datasets: [{
-            data: allStats.map(stat => 
-              stat.total > 0 ? (stat.completed / stat.total * 100).toFixed(1) : 0
-            ),
-            borderColor: '#faa61a',
-            tension: 0.4
-          }]
-        }
-      });
-    }
+      let data;
+      switch(chartId) {
+        case 'allTasksChart':
+          data = {
+            labels: allStats.map(stat => stat.date),
+            datasets: [{
+              data: allStats.map(stat => stat.total),
+              borderColor: '#7289da',
+              backgroundColor: 'rgba(114, 137, 218, 0.2)',
+              tension: 0.4,
+              fill: true
+            }]
+          };
+          break;
+        case 'completionRateChart':
+          data = {
+            labels: allStats.map(stat => stat.date),
+            datasets: [{
+              data: allStats.map(stat => 
+                stat.total > 0 ? (stat.completed / stat.total * 100).toFixed(1) : 0
+              ),
+              borderColor: '#faa61a',
+              backgroundColor: 'rgba(250, 166, 26, 0.2)',
+              tension: 0.4,
+              fill: true
+            }]
+          };
+          break;
+        case 'creationTrendChart':
+          data = {
+            labels: allStats.map(stat => stat.date),
+            datasets: [{
+              data: allStats.map(stat => stat.created),
+              borderColor: '#ff6b6b',
+              backgroundColor: 'rgba(255, 107, 107, 0.2)',
+              tension: 0.4,
+              fill: true
+            }]
+          };
+          break;
+        case 'activityHeatChart':
+          data = {
+            labels: ['12am', '3am', '6am', '9am', '12pm', '3pm', '6pm', '9pm'],
+            datasets: [{
+              data: stats.hourlyActivity,
+              borderColor: '#43b581',
+              backgroundColor: 'rgba(67, 181, 129, 0.2)',
+              tension: 0.4,
+              fill: true
+            }]
+          };
+          break;
+        case 'weekdayActivityChart':
+          data = {
+            labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            datasets: [{
+              data: stats.weekdayActivity,
+              borderColor: '#7289da',
+              backgroundColor: 'rgba(114, 137, 218, 0.2)',
+              tension: 0.4,
+              fill: true
+            }]
+          };
+          break;
+      }
 
-    if (creationTrendChart) {
-      this.globalCharts.creationTrend = new Chart(creationTrendChart, {
+      if (!this.globalCharts) this.globalCharts = {};
+      this.globalCharts[chartId] = new Chart(ctx, {
         ...chartConfig,
-        data: {
-          labels: allStats.map(stat => stat.date),
-          datasets: [{
-            data: allStats.map(stat => stat.created),
-            borderColor: '#ff6b6b',
-            tension: 0.4
-          }]
-        }
+        data
       });
-    }
+    });
   }
 
   loadUserSettings() {

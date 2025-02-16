@@ -24,7 +24,7 @@ export class TaskManager {
         this.groups.set(group.id, {
           id: group.id,
           name: group.name,
-          background: group.background, // Store the background object instead of just color
+          background: group.background, 
           tasks: tasksMap,
           stats: group.stats || {
             complete: 0,
@@ -39,7 +39,7 @@ export class TaskManager {
     const group = {
       id: Date.now().toString(),
       name,
-      background: background || { type: 'color', value: '#ffffff' }, // Provide default if undefined
+      background: background || { type: 'color', value: '#ffffff' }, 
       tasks: new Map(),
       stats: {
         complete: 0,
@@ -157,7 +157,7 @@ export class TaskManager {
       groups: Array.from(this.groups.values()).map(group => ({
         id: group.id,
         name: group.name,
-        background: group.background, // Store the background object instead of just color
+        background: group.background, 
         stats: group.stats,
         tasks: Array.from(group.tasks.values()).map(task => ({
           ...task,
@@ -218,22 +218,108 @@ export class TaskManager {
     let totalTasks = 0;
     let completedTasks = 0;
     let uncompletedTasks = 0;
+    const hourlyActivity = new Array(8).fill(0);
+    const weekdayActivity = new Array(7).fill(0);
+    let streakDays = [];
+    let longestStreak = 0;
+    let currentStreak = 0;
+  
+    // For calculating most active time
+    const activityByHour = new Array(24).fill(0);
+  
+    // For calculating most active day
+    const activityByDay = {
+      'Sunday': 0, 'Monday': 0, 'Tuesday': 0,
+      'Wednesday': 0, 'Thursday': 0, 'Friday': 0, 'Saturday': 0
+    };
+  
+    let totalCompletionTime = 0;
+    let completionTimeCount = 0;
 
+    // Process each task
     this.groups.forEach(group => {
       group.tasks.forEach(task => {
         totalTasks++;
+      
         if (task.completed) {
           completedTasks++;
+        
+          // Calculate completion time if both dates exist
+          if (task.completedAt && task.createdAt) {
+            const completionTime = task.completedAt - task.createdAt;
+            totalCompletionTime += completionTime;
+            completionTimeCount++;
+          }
+        
+          // Track activity by hour
+          if (task.completedAt) {
+            const hour = task.completedAt.getHours();
+            activityByHour[hour]++;
+            hourlyActivity[Math.floor(hour / 3)]++;
+          
+            // Track activity by day
+            const day = task.completedAt.toLocaleDateString('en-US', { weekday: 'long' });
+            activityByDay[day]++;
+            weekdayActivity[task.completedAt.getDay()]++;
+          }
+        
+          // Calculate streaks
+          const completedDate = task.completedAt.toDateString();
+          if (streakDays.includes(completedDate)) {
+            currentStreak++;
+            longestStreak = Math.max(longestStreak, currentStreak);
+          } else {
+            currentStreak = 1;
+            streakDays.push(completedDate);
+          }
         } else {
           uncompletedTasks++;
         }
       });
     });
 
+    // Calculate peak activity time
+    let peakHour = activityByHour.indexOf(Math.max(...activityByHour));
+    const peakTime = `${peakHour % 12 || 12}${peakHour < 12 ? 'am' : 'pm'}`;
+  
+    // Find most active day
+    const mostActiveDay = Object.entries(activityByDay)
+      .reduce((a, b) => a[1] > b[1] ? a : b)[0];
+  
+    // Calculate average completion time
+    const avgCompletionTime = completionTimeCount > 0 
+      ? this.formatDuration(totalCompletionTime / completionTimeCount)
+      : 'N/A';
+
     return {
       total: totalTasks,
       completed: completedTasks,
-      uncompleted: uncompletedTasks
+      uncompleted: uncompletedTasks,
+      completionRate: totalTasks > 0 
+        ? Math.round((completedTasks / totalTasks) * 100) 
+        : 0,
+      mostActiveDay,
+      peakActivityTime: peakTime,
+      avgCompletionTime,
+      longestStreak,
+      hourlyActivity,
+      weekdayActivity
     };
+  }
+
+  formatDuration(ms) {
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+    if (hours > 24) {
+      const days = Math.floor(hours / 24);
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    }
+  
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+  
+    return `${minutes}m`;
   }
 }

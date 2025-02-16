@@ -235,6 +235,46 @@ h2 {
   min-width: 280px;
   white-space: normal;
   margin-right: 0.5rem;  
+  overflow: hidden; /* Add this to contain the zooming background */
+}
+
+.group-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: inherit;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.2s ease;
+  z-index: 1;
+}
+
+.group-card:hover::before {
+  transform: scale(1.1);
+}
+
+.group-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.group-card:hover {
+  transform: translateY(-8px);
+}
+
+.add-group-card::before {
+  display: none; /* Don't show zoom effect on add card */
+}
+
+.group-card[style*="background-image"] {
+  background-image: none !important; /* Remove direct background image */
+}
+
+.group-card[style*="background-image"]::before {
+  background-image: var(--bg-image);
 }
 
 .group-card:not(.add-group-card) {
@@ -255,10 +295,6 @@ h2 {
 .group-card:nth-child(4) {
   background: #FFA500;
   color: black;
-}
-
-.group-card:hover {
-  transform: translateY(-8px);
 }
 
 .group-card h3 {
@@ -387,8 +423,24 @@ h2 {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card {
@@ -398,6 +450,11 @@ h2 {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border-color);
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
 }
 
 .stat-card h3 {
@@ -407,15 +464,12 @@ h2 {
 }
 
 .stat-card .stat-value {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 600;
   margin-bottom: 1rem;
-}
-
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  background: linear-gradient(45deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .chart-card {
@@ -941,6 +995,26 @@ dialog[open] {
   font-weight: 500;
 }
 
+.settings-section:last-child .preference-item {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settings-section:last-child .preference-item .preference-info {
+  opacity: 0.7;
+}
+
+.settings-section:last-child .preference-item label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.settings-section:last-child .preference-item p {
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin-top: 0.25rem;
+}
+
 .settings-form {
   max-width: 600px;
 }
@@ -1180,13 +1254,11 @@ body.light-mode .menu-toggle img {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
   }
-
+  
   .chart-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
   }
 
   .stat-card {

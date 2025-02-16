@@ -49,6 +49,8 @@
   </style>
 </head>
 <body>
+  <!-- Update the PWA download link to open in a new window -->
+  <a href="keepthisonwebsim.html" class="pwa-download" target="_blank">Download App</a>
 
   <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu">
     <img src="https://static-00.iconduck.com/assets.00/sidebar-expand-icon-512x512-uk1vk52t.png" alt="Toggle menu">
@@ -127,6 +129,26 @@
               <h3>Uncompleted Tasks</h3>
               <div class="stat-value" id="total-uncompleted">0</div>
             </div>
+            <div class="stat-card">
+              <h3>Completion Rate</h3>
+              <div class="stat-value" id="completion-rate">0%</div>
+            </div>
+            <div class="stat-card">
+              <h3>Most Active Day</h3>
+              <div class="stat-value" id="most-active-day">N/A</div>
+            </div>
+            <div class="stat-card">
+              <h3>Avg. Completion Time</h3>
+              <div class="stat-value" id="avg-completion-time">N/A</div>
+            </div>
+            <div class="stat-card">
+              <h3>Peak Activity Time</h3>
+              <div class="stat-value" id="peak-activity-time">N/A</div>
+            </div>
+            <div class="stat-card">
+              <h3>Longest Streak</h3>
+              <div class="stat-value" id="longest-streak">0 days</div>
+            </div>
           </div>
           <div class="chart-grid">
             <div class="chart-card">
@@ -134,12 +156,20 @@
               <canvas id="allTasksChart"></canvas>
             </div>
             <div class="chart-card">
-              <h3>Completion Rate</h3>
+              <h3>Completion Rate (%)</h3>
               <canvas id="completionRateChart"></canvas>
             </div>
             <div class="chart-card">
               <h3>Task Creation Trend</h3>
               <canvas id="creationTrendChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>24-Hour Activity Pattern</h3>
+              <canvas id="activityHeatChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Weekly Activity Pattern</h3>
+              <canvas id="weekdayActivityChart"></canvas>
             </div>
           </div>
         </div>
@@ -170,6 +200,28 @@
                 <input type="checkbox" id="theme-toggle" checked>
                 <span class="toggle-slider"></span>
               </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>App Details</h3>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Version</label>
+                <p>0.8.2</p>
+              </div>
+            </div>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Build Date</label>
+                <p>March 2024</p>
+              </div>
+            </div>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Developer</label>
+                <p>MonoDeaf</p>
+              </div>
             </div>
           </div>
         </div>
