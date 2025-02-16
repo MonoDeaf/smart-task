@@ -235,7 +235,7 @@ h2 {
   min-width: 280px;
   white-space: normal;
   margin-right: 0.5rem;  
-  overflow: hidden; /* Add this to contain the zooming background */
+  overflow: hidden;
 }
 
 .group-card::before {
@@ -245,7 +245,7 @@ h2 {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: inherit;
+  background-image: var(--bg-image);
   background-size: cover;
   background-position: center;
   transition: transform 0.2s ease;
@@ -266,20 +266,15 @@ h2 {
 }
 
 .add-group-card::before {
-  display: none; /* Don't show zoom effect on add card */
+  display: none;
 }
 
 .group-card[style*="background-image"] {
-  background-image: none !important; /* Remove direct background image */
+  background-image: none !important;
 }
 
 .group-card[style*="background-image"]::before {
   background-image: var(--bg-image);
-}
-
-.group-card:not(.add-group-card) {
-  color: var(--text-primary);
-  background: white;
 }
 
 .group-card:nth-child(2) {
