@@ -15,7 +15,8 @@ export class TaskManager {
             tasksMap.set(task.id, {
               ...task,
               createdAt: new Date(task.createdAt),
-              completedAt: task.completedAt ? new Date(task.completedAt) : null
+              completedAt: task.completedAt ? new Date(task.completedAt) : null,
+              dueDate: task.dueDate ? new Date(task.dueDate) : null
             });
           });
         }
@@ -50,14 +51,14 @@ export class TaskManager {
     return group;
   }
 
-  createTask(groupId, title, description) {
+  createTask(groupId, title, dueDate = null) {
     const task = {
       id: Date.now().toString(),
       title,
-      description,
       completed: false,
       createdAt: new Date(),
-      completedAt: null
+      completedAt: null,
+      dueDate: dueDate ? new Date(dueDate) : null
     };
     
     const group = this.groups.get(groupId);
@@ -161,7 +162,8 @@ export class TaskManager {
         tasks: Array.from(group.tasks.values()).map(task => ({
           ...task,
           createdAt: task.createdAt.toISOString(),
-          completedAt: task.completedAt ? task.completedAt.toISOString() : null
+          completedAt: task.completedAt ? task.completedAt.toISOString() : null,
+          dueDate: task.dueDate ? task.dueDate.toISOString() : null
         }))
       }))
     };

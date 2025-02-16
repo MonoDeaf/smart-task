@@ -67,16 +67,39 @@ export class UIManager {
       });
     }
 
+    // Add due date toggle handler
+    const dueDateCheckbox = document.getElementById('has-due-date');
+    const dueDateInput = document.getElementById('task-due-date');
+    
+    if (dueDateCheckbox && dueDateInput) {
+      dueDateCheckbox.addEventListener('change', (e) => {
+        dueDateInput.disabled = !e.target.checked;
+        if (e.target.checked) {
+          // Set default value to tomorrow at noon
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(12, 0, 0, 0);
+          dueDateInput.value = tomorrow.toISOString().slice(0, 16);
+          dueDateInput.focus();
+        }
+      });
+    }
+
     // New task form
     const newTaskForm = document.querySelector('#new-task-modal form');
     if (newTaskForm) {
       newTaskForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const title = document.getElementById('task-title')?.value || '';
-        const description = document.getElementById('task-description')?.value || '';
+        const hasDueDate = document.getElementById('has-due-date')?.checked || false;
+        const dueDate = hasDueDate ? document.getElementById('task-due-date')?.value : null;
         
         if (this.taskManager.currentGroup) {
-          this.taskManager.createTask(this.taskManager.currentGroup.id, title, description);
+          this.taskManager.createTask(
+            this.taskManager.currentGroup.id, 
+            title, 
+            dueDate
+          );
           this.updateGroupPage(this.taskManager.currentGroup.id);
         }
         
@@ -383,9 +406,7 @@ export class UIManager {
             </div>
           </div>
           <div class="corner-arrow">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M5 19v-6h4.28l-6-6L4.72 5.28l6 6V7h6v12z" transform="rotate(45 12 12)"/>
-            </svg>
+            <span class="iconify" data-icon="material-symbols:arrow-outward" width="24" height="24"></span>
           </div>
           <div style="position: relative; z-index: 1;">
             <h3 style="color: ${textColor}; opacity: 1 !important; font-weight: 600;">${group.name}</h3>
@@ -714,13 +735,14 @@ export class UIManager {
         <input type="checkbox" ${task.completed ? 'checked' : ''}>
         <div class="task-content">
           <h4>${task.title}</h4>
-          ${task.description ? `<p>${task.description}</p>` : ''}
         </div>
         <div class="task-actions">
-          <button class="task-view-btn" data-task-id="${task.id}" title="View task">
-            <img src="/3079254-512.png" alt="View task">
-            Open
-          </button>
+          ${!task.completed ? `
+            <button class="task-view-btn" data-task-id="${task.id}" title="View task">
+              <span class="iconify" data-icon="material-symbols:select-window-2" width="20" height="20"></span>
+              Open
+            </button>
+          ` : ''}
           <button class="task-delete-btn" data-task-id="${task.id}" title="Delete task">
             <svg viewBox="0 0 24 24">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -729,19 +751,19 @@ export class UIManager {
         </div>
       `;
 
-      // Add checkbox event listener
       taskElement.querySelector('input').addEventListener('change', (e) => {
         this.taskManager.toggleTask(groupId, task.id);
         taskElement.classList.toggle('completed', e.target.checked);
         setTimeout(() => this.updateGroupPage(groupId), 300);
       });
 
-      // Add view button event listener
-      taskElement.querySelector('.task-view-btn').addEventListener('click', () => {
-        this.showTaskView(task);
-      });
+      const viewBtn = taskElement.querySelector('.task-view-btn');
+      if (viewBtn) {
+        viewBtn.addEventListener('click', () => {
+          this.showTaskView(task);
+        });
+      }
 
-      // Add delete button event listener
       taskElement.querySelector('.task-delete-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         this.showDeleteTaskConfirmation(groupId, task.id);
@@ -754,7 +776,6 @@ export class UIManager {
       }
     });
 
-    // ... rest of existing updateGroupPage code ...
     const statsContainer = document.createElement('div');
     statsContainer.className = 'stats-grid';
     statsContainer.innerHTML = `
@@ -817,7 +838,7 @@ export class UIManager {
   
     // Open in new window with specific dimensions and position
     const taskWindow = window.open(
-      `/smart-task/task-view.html?${params.toString()}`,
+      `/task-view.html?${params.toString()}`,
       '_blank',
       'width=300,height=400,resizable=yes,scrollbars=yes,alwaysOnTop=yes'
     );

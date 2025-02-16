@@ -179,7 +179,6 @@
 <body>
   <div class="task-container">
     <h1 id="task-title"></h1>
-    <p id="task-description"></p>
     
     <div class="timer-section">
       <div class="timer-controls">
@@ -208,11 +207,12 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { requestNotificationPermission, sendTaskCompleteNotification } from './notifications.js';
+
     // Get task data from URL parameters
     const params = new URLSearchParams(window.location.search);
     document.getElementById('task-title').textContent = params.get('title') || 'Untitled Task';
-    document.getElementById('task-description').textContent = params.get('description') || 'No description provided';
     document.getElementById('task-status').textContent = params.get('status') || 'Unknown';
     document.getElementById('task-created').textContent = params.get('created') || 'Unknown';
     document.getElementById('task-completed').textContent = params.get('completed') || 'Not completed';
@@ -263,11 +263,8 @@
           startButton.classList.remove('running');
           timerInput.disabled = false;
           
-          // Notify user
-          new Notification('Timer Complete!', {
-            body: `Time's up for task: ${params.get('title')}`,
-            icon: '/3079254-512.png'
-          });
+          // Notify user using the notification service
+          sendTaskCompleteNotification(params.get('title'));
         }
       }, 1000);
     }
@@ -280,10 +277,8 @@
 
     startButton.addEventListener('click', startTimer);
 
-    // Request notification permission
-    if (Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
+    // Request notification permission on load
+    requestNotificationPermission();
 
     window.focus();
   </script>

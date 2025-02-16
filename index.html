@@ -9,14 +9,49 @@
   <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Add Iconify for icons -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
   <script type="module" src="app.js"></script>
   <style>
     .dot-menu svg {
       fill: currentColor;
     }
+    
+    /* Update styles for the PWA download link */
+    .pwa-download {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      background-color: #0a0a0a;
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      font-size: 0.9rem;
+      z-index: 10;
+      border: 1px solid #1e1e1e;
+    }
+
+    .pwa-download:hover {
+      background-color: #121212;
+    }
+
+    @media (max-width: 768px) {
+      .pwa-download {
+        top: 1rem;
+        right: 1rem;
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Update the PWA download link to open in a new window -->
+  <a href="keepthisonwebsim.html" class="pwa-download" target="_blank">Download App</a>
+
   <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu">
     <img src="https://static-00.iconduck.com/assets.00/sidebar-expand-icon-512x512-uk1vk52t.png" alt="Toggle menu">
   </button>
@@ -148,12 +183,26 @@
 
   <dialog id="new-task-modal">
     <form method="dialog">
-      <h3>New Task</h3>
-      <input type="text" id="task-title" placeholder="Task title" required>
-      <textarea id="task-description" placeholder="Task description"></textarea>
+      <h3>Create Task</h3>
+      <div class="form-group">
+        <label for="task-title">Title</label>
+        <input type="text" id="task-title" placeholder="What needs to be done?" required>
+      </div>
+      <div class="form-group">
+        <div class="due-date-section">
+          <div class="due-date-toggle">
+            <label class="toggle-switch">
+              <input type="checkbox" id="has-due-date">
+              <span class="toggle-slider"></span>
+            </label>
+            <span>Set due date</span>
+          </div>
+          <input type="datetime-local" id="task-due-date" disabled>
+        </div>
+      </div>
       <div class="modal-buttons">
         <button type="button" class="btn secondary" id="cancel-task">Cancel</button>
-        <button type="submit" class="btn">Add Task</button>
+        <button type="submit" class="btn">Create Task</button>
       </div>
     </form>
   </dialog>
@@ -198,11 +247,7 @@
       </div>
     </form>
   </dialog>
-  <div class="corner-arrow">
-    <svg viewBox="0 0 24 24" width="20" height="20">
-      <path fill="currentColor" d="M19 5v2h-4V5h4M9 5v6h10V5h2v6h-2v2H9v-2H5V5h4m10 8v6h-4v-6h4M9 17v2h10v-2h2v2h-2v2H9v-2H5v-2h4z"/>
-    </svg>
-  </div>
+  
   <script>
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/smart-task/sw.js")
