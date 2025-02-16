@@ -303,10 +303,30 @@
       .catch(err => console.error("Service Worker Registration Failed:", err));
   }
 
-    if (window.location.search.includes("install=true")) {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-    }
+  let deferredPrompt; // Global variable to store the install event
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault(); // Stop automatic prompt
+    deferredPrompt = event; // Store event for later use
+});
+
+// Check for install flag in the URL
+if (window.location.search.includes("install=true")) {
+    setTimeout(() => { // Delay a bit to ensure `beforeinstallprompt` fires
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === "accepted") {
+                    console.log("User installed the app 🎉");
+                } else {
+                    console.log("User dismissed the install prompt ❌");
+                }
+                deferredPrompt = null;
+            });
+        } else {
+            console.log("❌ Install prompt not available.");
+        }
+    }, 1500); // Slight delay to wait for the event to trigger
 }
 </script>
 </body>
