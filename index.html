@@ -315,16 +315,32 @@ window.addEventListener("beforeinstallprompt", (event) => {
     deferredPrompt = event;
 
     // Show an install button when the event is available
+    let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+
+    // Create the install button
     const installButton = document.createElement("button");
-    installButton.textContent = "Install Task Tracker";
+    installButton.textContent = "Install App 🚀";
+    installButton.style.position = "fixed";
+    installButton.style.top = "10px";
+    installButton.style.right = "10px";
     installButton.style.padding = "10px 20px";
     installButton.style.fontSize = "16px";
     installButton.style.cursor = "pointer";
+    installButton.style.background = "#1e90ff"; // Nice blue color
+    installButton.style.color = "#fff";
+    installButton.style.border = "none";
+    installButton.style.borderRadius = "8px";
+    installButton.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+    installButton.style.zIndex = "1000"; // Make sure it's always on top
     document.body.appendChild(installButton);
 
     installButton.addEventListener("click", () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt(); // Show install prompt
+            deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === "accepted") {
                     console.log("User installed the app 🎉");
@@ -332,11 +348,12 @@ window.addEventListener("beforeinstallprompt", (event) => {
                     console.log("User dismissed the install prompt ❌");
                 }
                 deferredPrompt = null;
-                installButton.remove(); // Remove the button after clicking
+                installButton.remove(); // Remove the button after installing
             });
         }
     });
 });
+
     
 </script>
 </body>
