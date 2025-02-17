@@ -91,16 +91,21 @@
     }
 
     .timer-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       padding: 1.5rem;
       border-top: 1px solid #1e1e1e;
-      width: 100%;
+      min-height: 300px;
     }
 
     .timer-controls {
       display: flex;
       gap: 1rem;
       align-items: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     #timer-input {
@@ -114,29 +119,30 @@
     }
 
     #start-timer {
-      background: #43b581;
+      background: #0a0a0a;
       color: white;
-      border: none;
+      border: 1px solid #1e1e1e;
       padding: 0.5rem 1rem;
       border-radius: 4px;
       cursor: pointer;
       font-size: 1rem;
-      transition: opacity 0.2s ease;
+      transition: all 0.2s ease;
+      min-width: 80px;
     }
 
     #start-timer:hover {
-      opacity: 0.9;
+      background: #121212;
     }
 
     #start-timer.running {
-      background: #f04747;
+      background: #0a0a0a;
+      color: #f04747;
+      border-color: #f04747;
     }
 
     .timer-display-container {
-      position: relative;
-      width: 100%;
       text-align: center;
-      padding: 1rem 0;
+      margin-bottom: 2rem;
     }
 
     #timer-display {
@@ -157,23 +163,6 @@
       padding: 0;
       line-height: 1;
     }
-
-    .timer-display-container::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 90%;
-      background: linear-gradient(
-        transparent,
-        rgba(18, 18, 18, 0.7) 20%,
-        rgba(18, 18, 18, 0.9) 40%,
-        rgba(18, 18, 18, 0.98) 70%,
-        #121212 100%
-      );
-      pointer-events: none;
-    }
   </style>
 </head>
 <body>
@@ -184,7 +173,7 @@
       <div class="timer-controls">
         <input type="number" id="timer-input" value="30" min="1" max="180">
         <span style="color: #888;">minutes</span>
-        <button id="start-timer">Start Timer</button>
+        <button id="start-timer">Start</button>
       </div>
       <div class="timer-display-container">
         <div id="timer-display">30:00</div>
@@ -204,11 +193,15 @@
         <span>Completed</span>
         <span id="task-completed"></span>
       </div>
+      <div class="metadata-item">
+        <span>Due Date</span>
+        <span id="task-due-date"></span>
+      </div>
     </div>
   </div>
 
   <script type="module">
-    import { requestNotificationPermission, sendTaskCompleteNotification } from './notifications.js';
+    import { requestNotificationPermission, sendTaskCompleteNotification } from '/notifications.js';
 
     // Get task data from URL parameters
     const params = new URLSearchParams(window.location.search);
@@ -216,6 +209,7 @@
     document.getElementById('task-status').textContent = params.get('status') || 'Unknown';
     document.getElementById('task-created').textContent = params.get('created') || 'Unknown';
     document.getElementById('task-completed').textContent = params.get('completed') || 'Not completed';
+    document.getElementById('task-due-date').textContent = params.get('dueDate') || 'No due date set';
 
     // Timer functionality
     const timerInput = document.getElementById('timer-input');
@@ -233,7 +227,7 @@
         // Stop the timer
         clearInterval(timerInterval);
         timerInterval = null;
-        startButton.textContent = 'Start Timer';
+        startButton.textContent = 'Start';
         startButton.classList.remove('running');
         timerInput.disabled = false;
         
@@ -246,7 +240,7 @@
       // Start the timer
       timeLeft = parseInt(timerInput.value) * 60;
       timerInput.disabled = true;
-      startButton.textContent = 'Stop Timer';
+      startButton.textContent = 'Stop';
       startButton.classList.add('running');
 
       timerInterval = setInterval(() => {
@@ -259,7 +253,7 @@
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
           timerInterval = null;
-          startButton.textContent = 'Start Timer';
+          startButton.textContent = 'Start';
           startButton.classList.remove('running');
           timerInput.disabled = false;
           

@@ -322,4 +322,26 @@ export class TaskManager {
   
     return `${minutes}m`;
   }
+
+  saveTaskNotes(groupId, taskId, notes) {
+    const group = this.groups.get(groupId);
+    if (group) {
+      const task = group.tasks.get(taskId);
+      if (task) {
+        task.notes = notes;
+        this.saveData();
+      }
+    }
+  }
+
+  getTaskNotes(groupId, taskId) {
+    const group = this.groups.get(groupId);
+    if (group) {
+      const task = group.tasks.get(taskId);
+      if (task) {
+        return task.notes || '';
+      }
+    }
+    return '';
+  }
 }

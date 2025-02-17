@@ -7,6 +7,12 @@ export class UIManager {
     this.charts = null;
     this.globalCharts = null;
     this.isMobileMenuOpen = false;
+
+    // Add periodic update check
+    this.startUpdateCheck();
+    this.loadUserSettings();
+    this.setupMobileMenu();
+    this.setupThemeToggle();
   }
 
   initializeUI() {
@@ -14,8 +20,6 @@ export class UIManager {
     this.setupEventListeners();
     this.setupGroupModal();
     this.updateHomePage();
-    this.loadUserSettings();
-    this.setupMobileMenu();
   }
 
   setupNavigation() {
@@ -70,20 +74,55 @@ export class UIManager {
     // Add due date toggle handler
     const dueDateCheckbox = document.getElementById('has-due-date');
     const dueDateInput = document.getElementById('task-due-date');
+    const dueDatePresets = document.querySelector('.due-date-presets');
     
     if (dueDateCheckbox && dueDateInput) {
       dueDateCheckbox.addEventListener('change', (e) => {
         dueDateInput.disabled = !e.target.checked;
-        if (e.target.checked) {
-          // Set default value to tomorrow at noon
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          tomorrow.setHours(12, 0, 0, 0);
-          dueDateInput.value = tomorrow.toISOString().slice(0, 16);
-          dueDateInput.focus();
+        dueDateInput.classList.toggle('active', e.target.checked);
+        dueDatePresets.classList.toggle('active', e.target.checked);
+        if (!e.target.checked) {
+          document.querySelectorAll('.preset-btn').forEach(btn => 
+            btn.classList.remove('selected')
+          );
         }
       });
     }
+
+    // Add preset buttons handler
+    const presetButtons = document.querySelectorAll('.preset-btn');
+    presetButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove selected class from all buttons
+        presetButtons.forEach(btn => btn.classList.remove('selected'));
+        button.classList.add('selected');
+        
+        const now = new Date();
+        let dueDate = new Date();
+        
+        // Set time to noon (12:00) for better UX
+        dueDate.setHours(12, 0, 0, 0);
+        
+        switch(button.dataset.preset) {
+          case 'today':
+            // Keep current date, just set to noon
+            break;
+          case 'tomorrow':
+            dueDate.setDate(dueDate.getDate() + 1);
+            break;
+          case 'next-week':
+            dueDate.setDate(dueDate.getDate() + 7);
+            break;
+          case 'next-month':
+            dueDate.setMonth(dueDate.getMonth() + 1);
+            break;
+        }
+        
+        // Format date for datetime-local input
+        const formattedDate = dueDate.toISOString().slice(0, 16);
+        dueDateInput.value = formattedDate;
+      });
+    });
 
     // New task form
     const newTaskForm = document.querySelector('#new-task-modal form');
@@ -323,6 +362,16 @@ export class UIManager {
     }
   }
 
+  setupThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.addEventListener('change', () => {
+        document.body.classList.toggle('light-mode', !themeToggle.checked);
+        localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
+      });
+    }
+  }
+
   navigateTo(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`${page}-page`).classList.add('active');
@@ -343,6 +392,8 @@ export class UIManager {
     } else if (page === 'graphs') {
       // Always reinitialize the graphs page when navigating to it
       this.updateGraphsPage();
+    } else if (page === 'updates') {
+      this.updateUpdatesPage();
     }
   }
 
@@ -668,9 +719,76 @@ export class UIManager {
     });
   }
 
+  setupNotesPanel() {
+    // Create notes panel if it doesn't exist
+    if (!document.querySelector('.notes-panel')) {
+      const notesPanel = document.createElement('div');
+      notesPanel.className = 'notes-panel';
+      notesPanel.innerHTML = `
+        <div class="notes-panel-header">
+          <h3>Task Notes</h3>
+          <button class="close-notes">
+            <span class="iconify" data-icon="mdi:close" width="24" height="24"></span>
+          </button>
+        </div>
+        <div class="notes-content">
+          <textarea class="notes-textarea" placeholder="Add your notes here..."></textarea>
+          <button class="save-notes">Save Notes</button>
+        </div>
+      `;
+      document.body.appendChild(notesPanel);
+
+      // Add event listeners
+      const closeBtn = notesPanel.querySelector('.close-notes');
+      closeBtn.addEventListener('click', () => {
+        notesPanel.classList.remove('active');
+      });
+
+      // Close panel when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.notes-panel') && 
+            !e.target.closest('.task-notes-btn')) {
+          notesPanel.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  showNotesPanel(groupId, taskId, taskTitle) {
+    this.setupNotesPanel();
+    const notesPanel = document.querySelector('.notes-panel');
+    const textarea = notesPanel.querySelector('.notes-textarea');
+    const saveBtn = notesPanel.querySelector('.save-notes');
+    const header = notesPanel.querySelector('h3');
+    
+    // Update panel title to show just the task title
+    header.textContent = taskTitle;
+    
+    // Load existing notes
+    textarea.value = this.taskManager.getTaskNotes(groupId, taskId);
+    
+    // Show panel
+    notesPanel.classList.add('active');
+    
+    // Remove existing event listener if any
+    saveBtn.replaceWith(saveBtn.cloneNode(true));
+    
+    // Add new event listener
+    notesPanel.querySelector('.save-notes').addEventListener('click', () => {
+      this.taskManager.saveTaskNotes(groupId, taskId, textarea.value);
+      notesPanel.classList.remove('active');
+    });
+  }
+
   updateGroupPage(groupId) {
     const group = this.taskManager.groups.get(groupId);
     if (!group) return;
+
+    // Create audio elements for completion sounds
+    const partySound = new Audio('/notification-2-269292.mp3'); 
+    const messageSound = new Audio('/Windows Notify System Generic.wav'); 
+    const achievementSound = new Audio('/best-notification-1-286672.mp3'); 
+    const notifySound = new Audio('/new message.mp3'); 
 
     const groupHeader = document.querySelector('.group-header');
     groupHeader.style.backgroundColor = 'var(--bg-secondary)';
@@ -720,60 +838,133 @@ export class UIManager {
     let completedCount = 0;
     let uncompletedCount = 0;
 
-    group.tasks.forEach(task => {
-      totalTasks++;
-      if (task.completed) {
-        completedCount++;
-      } else {
-        uncompletedCount++;
-      }
-
-      const taskElement = document.createElement('div');
-      taskElement.className = `task-item ${task.completed ? 'completed' : ''}`;
-      taskElement.innerHTML = `
-        <input type="checkbox" ${task.completed ? 'checked' : ''}>
-        <div class="task-content">
-          <h4>${task.title}</h4>
-        </div>
-        <div class="task-actions">
-          ${!task.completed ? `
-            <button class="task-view-btn" data-task-id="${task.id}" title="View task">
-              <span class="iconify" data-icon="material-symbols:select-window-2" width="20" height="20"></span>
-              Open
-            </button>
-          ` : ''}
-          <button class="task-delete-btn" data-task-id="${task.id}" title="Delete task">
-            <svg viewBox="0 0 24 24">
-              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-            </svg>
-          </button>
+    if (group.tasks.size === 0) {
+      incompleteTasks.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: left; padding: 3rem; color: var(--text-secondary);">
+          <svg viewBox="0 0 24 24" width="48" height="48" style="margin-bottom: 1rem; opacity: 0.5;">
+            <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            <path fill="currentColor" d="M12 7c-.55 0-1 .45-1 1v3H8c-.55 0-1 .45-1 1s.45 1 1 1h3v3c0 .55.45 1 1 1s1-.45 1-1v-3h3c.55 0 1-.45 1-1s-.45-1-1-1h-3V8c0-.55-.45-1-1-1z"/>
+          </svg>
+          <h3 style="margin-bottom: 0.5rem; color: var(--text-secondary);">No tasks yet</h3>
+          <p style="margin: 0; opacity: 0.7;">Click the "Add Task" button to create your first task</p>
         </div>
       `;
+      completeTasks.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: left; padding: 3rem; color: var(--text-secondary);">
+          <p style="margin: 0; opacity: 0.7;">Completed tasks will appear here</p>
+        </div>
+      `;
+    } else {
+      group.tasks.forEach(task => {
+        totalTasks++;
+        if (task.completed) {
+          completedCount++;
+        } else {
+          uncompletedCount++;
+        }
 
-      taskElement.querySelector('input').addEventListener('change', (e) => {
-        this.taskManager.toggleTask(groupId, task.id);
-        taskElement.classList.toggle('completed', e.target.checked);
-        setTimeout(() => this.updateGroupPage(groupId), 300);
-      });
+        const taskElement = document.createElement('div');
+        
+        let taskClasses = ['task-item'];
+        if (task.completed) {
+          taskClasses.push('completed');
+        }
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          const today = new Date();
+          
+          // Reset time parts to compare just the dates
+          today.setHours(0, 0, 0, 0);
+          dueDate.setHours(0, 0, 0, 0);
+          
+          if (dueDate < today) {
+            taskClasses.push('overdue');
+          } else if (dueDate.getTime() === today.getTime()) {
+            taskClasses.push('due-today');
+          }
+        }
+        
+        taskElement.className = taskClasses.join(' ');
 
-      const viewBtn = taskElement.querySelector('.task-view-btn');
-      if (viewBtn) {
-        viewBtn.addEventListener('click', () => {
-          this.showTaskView(task);
+        taskElement.innerHTML = `
+          <input type="checkbox" ${task.completed ? 'checked' : ''}>
+          <div class="task-content">
+            <div class="task-header">
+              <h4>${task.title}</h4>
+              ${task.dueDate ? `
+                <span class="due-date ${new Date(task.dueDate) < new Date() ? 'overdue' : ''}">
+                  Due: ${this.getRelativeDateDisplay(task.dueDate)}
+                </span>
+              ` : ''}
+            </div>
+            <div class="task-actions">
+              ${!task.completed ? `
+                <button class="task-view-btn" data-task-id="${task.id}" title="View task">
+                  <span class="iconify" data-icon="material-symbols:select-window-2" width="20" height="20"></span>
+                  Open
+                </button>
+                <button class="task-notes-btn" data-task-id="${task.id}" title="Task notes">
+                  <span class="iconify" data-icon="mdi:note-edit-outline" width="20" height="20"></span>
+                  Notes
+                </button>
+              ` : ''}
+              <button class="task-delete-btn" data-task-id="${task.id}" title="Delete task">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+
+        taskElement.querySelector('input').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            const selectedSound = localStorage.getItem('completionSound') || 'achievement';
+            if (selectedSound === 'party') {
+              partySound.currentTime = 0;
+              partySound.play().catch(err => console.log('Error playing sound:', err));
+            } else if (selectedSound === 'message') {
+              messageSound.currentTime = 0;
+              messageSound.play().catch(err => console.log('Error playing sound:', err));
+            } else if (selectedSound === 'achievement') {
+              achievementSound.currentTime = 0;
+              achievementSound.play().catch(err => console.log('Error playing sound:', err));
+            } else if (selectedSound === 'notify') {
+              notifySound.currentTime = 0;
+              notifySound.play().catch(err => console.log('Error playing sound:', err));
+            }
+          }
+          this.taskManager.toggleTask(groupId, task.id);
+          taskElement.classList.toggle('completed', e.target.checked);
+          setTimeout(() => this.updateGroupPage(groupId), 300);
         });
-      }
 
-      taskElement.querySelector('.task-delete-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.showDeleteTaskConfirmation(groupId, task.id);
+        const viewBtn = taskElement.querySelector('.task-view-btn');
+        if (viewBtn) {
+          viewBtn.addEventListener('click', () => {
+            this.showTaskView(task);
+          });
+        }
+
+        const notesBtn = taskElement.querySelector('.task-notes-btn');
+        if (notesBtn) {
+          notesBtn.addEventListener('click', () => {
+            this.showNotesPanel(groupId, task.id, task.title);
+          });
+        }
+
+        taskElement.querySelector('.task-delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showDeleteTaskConfirmation(groupId, task.id);
+        });
+
+        if (task.completed) {
+          completeTasks.appendChild(taskElement);
+        } else {
+          incompleteTasks.appendChild(taskElement);
+        }
       });
-
-      if (task.completed) {
-        completeTasks.appendChild(taskElement);
-      } else {
-        incompleteTasks.appendChild(taskElement);
-      }
-    });
+    }
 
     this.updateCharts(groupId);
   }
@@ -807,16 +998,15 @@ export class UIManager {
   }
 
   showTaskView(task) {
-    // Create URL parameters with task data
     const params = new URLSearchParams({
       title: task.title,
       description: task.description || 'No description provided',
       status: task.completed ? 'Completed' : 'In Progress',
       created: new Date(task.createdAt).toLocaleString(),
-      completed: task.completedAt ? new Date(task.completedAt).toLocaleString() : 'Not completed'
+      completed: task.completedAt ? new Date(task.completedAt).toLocaleString() : 'Not completed',
+      dueDate: task.dueDate ? new Date(task.dueDate).toLocaleString() : 'No due date set'
     });
-  
-    // Open in new window with specific dimensions and position
+
     const taskWindow = window.open(
       `/task-view.html?${params.toString()}`,
       '_blank',
@@ -1044,21 +1234,138 @@ export class UIManager {
   }
 
   loadUserSettings() {
-    const username = localStorage.getItem('username') || 'User';
-    const isDarkMode = localStorage.getItem('darkMode') !== 'light';
-    
-    document.getElementById('username').value = username;
-    document.getElementById('welcome').textContent = `Welcome, ${username}`;
-    document.getElementById('theme-toggle').checked = isDarkMode;
-    
-    // Set initial theme
-    document.body.classList.toggle('light-mode', !isDarkMode);
-    
-    // Add theme toggle listener
-    document.getElementById('theme-toggle').addEventListener('change', (e) => {
-      const isLight = !e.target.checked;
-      document.body.classList.toggle('light-mode', isLight);
-      localStorage.setItem('darkMode', isLight ? 'light' : 'dark');
+    if (!localStorage.getItem('completionSound')) {
+      localStorage.setItem('completionSound', 'message');
+    }
+
+    if (!localStorage.getItem('theme')) {
+      localStorage.setItem('theme', 'dark');
+    }
+
+    const selectedSound = localStorage.getItem('completionSound');
+    const soundInput = document.querySelector(`input[name="completion-sound"][value="${selectedSound}"]`);
+    if (soundInput) {
+      soundInput.checked = true;
+    }
+
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.checked = localStorage.getItem('theme') !== 'light';
+      document.body.classList.toggle('light-mode', localStorage.getItem('theme') === 'light');
+    }
+
+    const soundOptions = document.querySelectorAll('input[name="completion-sound"]');
+    soundOptions.forEach(option => {
+      option.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          localStorage.setItem('completionSound', e.target.value);
+        }
+      });
     });
+
+    const playButtons = document.querySelectorAll('.play-button');
+    playButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const soundType = button.dataset.sound;
+        if (soundType === 'party') {
+          const audio = new Audio('/notification-2-269292.mp3');
+          audio.play().catch(err => console.log('Error playing sound:', err));
+        } else if (soundType === 'message') {
+          const audio = new Audio('/Windows Notify System Generic.wav');
+          audio.play().catch(err => console.log('Error playing sound:', err));
+        } else if (soundType === 'achievement') {
+          const audio = new Audio('/best-notification-1-286672.mp3');
+          audio.play().catch(err => console.log('Error playing sound:', err));
+        } else if (soundType === 'notify') {
+          const audio = new Audio('/new message.mp3');
+          audio.play().catch(err => console.log('Error playing sound:', err));
+        }
+      });
+    });
+  }
+
+  getRelativeDateDisplay(dateStr) {
+    const dueDate = new Date(dateStr);
+    const today = new Date();
+    
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    // Check if the dates match our presets
+    if (dueDate.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (dueDate.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow';
+    } else if (dueDate > today && dueDate <= nextWeek) {
+      return 'Next Week';
+    } else if (dueDate > today && dueDate <= nextMonth) {
+      return 'Next Month';
+    }
+    
+    // If it doesn't match any preset, return the formatted date
+    return new Date(dateStr).toLocaleString();
+  }
+
+  updateUpdatesPage() {
+    const updatesContainer = document.querySelector('.updates-container');
+    if (!updatesContainer) return;
+
+    import('./updates.js').then(({ updates, setLastSeenVersion, getLatestVersion }) => {
+      // Update the container with updates
+      updatesContainer.innerHTML = updates.map(update => `
+        <div class="update-card">
+          <div class="version">Version ${update.version}</div>
+          <div class="date">${update.date}</div>
+          <h3>${update.title}</h3>
+          <ul>
+            ${update.changes.map(change => `
+              <li>${change}</li>
+            `).join('')}
+          </ul>
+        </div>
+      `).join('');
+
+      // Mark updates as seen
+      setLastSeenVersion(getLatestVersion());
+      
+      // Remove the indicator
+      const indicator = document.querySelector('.update-indicator');
+      if (indicator) {
+        indicator.classList.remove('active');
+      }
+    });
+  }
+
+  updateUpdatesIndicator() {
+    import('./updates.js').then(({ hasNewUpdates }) => {
+      const updateIcon = document.querySelector('[data-page="updates"]');
+      const indicator = updateIcon.querySelector('.update-indicator') || (() => {
+        const div = document.createElement('div');
+        div.className = 'update-indicator';
+        updateIcon.appendChild(div);
+        return div;
+      })();
+      
+      indicator.classList.toggle('active', hasNewUpdates());
+    });
+  }
+
+  startUpdateCheck() {
+    // Check immediately on load
+    this.updateUpdatesIndicator();
+    
+    // Then check every 30 minutes
+    setInterval(() => {
+      this.updateUpdatesIndicator();
+    }, 30 * 60 * 1000);
   }
 }

@@ -34,7 +34,7 @@
       border: 1px solid #1e1e1e;
     }
 
-    .pwa-:hover {
+    .pwa-download:hover {
       background-color: #121212;
     }
 
@@ -49,6 +49,8 @@
   </style>
 </head>
 <body>
+  <!-- Update the PWA download link to open in a new window -->
+  <a href="keepthisonwebsim.html" class="pwa-download" target="_blank">Download App</a>
 
   <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu">
     <img src="https://static-00.iconduck.com/assets.00/sidebar-expand-icon-512x512-uk1vk52t.png" alt="Toggle menu">
@@ -70,6 +72,11 @@
         <li><a href="#" data-page="graphs" data-tooltip="Analytics">
           <svg viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
+          </svg>
+        </a></li>
+        <li><a href="#" data-page="updates" data-tooltip="Updates" style="position: relative;">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12zM12.5 8v4.25l3.5 2.08-.72 1.21L11 13V8h1.5z"/>
           </svg>
         </a></li>
       </ul>
@@ -183,7 +190,7 @@
               <input type="text" id="username" placeholder="Enter your name">
             </div>
             <div style="display: flex; justify-content: flex-end;">
-              <button class="btn" id="save-settings">Save Settings</button>
+              <button class="btn" id="save-settings">Save</button>
             </div>
           </div>
 
@@ -197,6 +204,32 @@
               <label class="toggle-switch">
                 <input type="checkbox" id="theme-toggle" checked>
                 <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Completion Sound</label>
+                <p>Select the sound to play when completing a task</p>
+              </div>
+            </div>
+            <div class="sound-grid">
+              <label class="sound-option">
+                <input type="radio" name="completion-sound" value="party">
+                <div class="sound-preview">
+                  <button type="button" class="play-button" data-sound="party">
+                    <span class="iconify" data-icon="mdi:play" width="20" height="20"></span>
+                  </button>
+                  <div class="sound-name">Party</div>
+                </div>
+              </label>
+              <label class="sound-option">
+                <input type="radio" name="completion-sound" value="message" checked>
+                <div class="sound-preview">
+                  <button type="button" class="play-button" data-sound="message">
+                    <span class="iconify" data-icon="mdi:play" width="20" height="20"></span>
+                  </button>
+                  <div class="sound-name">Message</div>
+                </div>
               </label>
             </div>
           </div>
@@ -218,10 +251,19 @@
             <div class="preference-item">
               <div class="preference-info">
                 <label>Developer</label>
-                <p>MonoDeaf</p>
+                <p>MonoDeaf <a href="https://x.com/monodeaf" target="_blank" class="x-link">
+                  <span class="iconify" data-icon="simple-icons:x" style="color: currentColor;" width="14" height="14"></span>
+                </a></p>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div id="updates-page" class="page">
+        <h2>Updates</h2>
+        <div class="updates-container">
+          <!-- Updates will be loaded here dynamically -->
         </div>
       </div>
 
@@ -244,6 +286,12 @@
               <span class="toggle-slider"></span>
             </label>
             <span>Set due date</span>
+          </div>
+          <div class="due-date-presets">
+            <button type="button" class="preset-btn" data-preset="today">Today</button>
+            <button type="button" class="preset-btn" data-preset="tomorrow">Tomorrow</button>
+            <button type="button" class="preset-btn" data-preset="next-week">Next Week</button>
+            <button type="button" class="preset-btn" data-preset="next-month">Next Month</button>
           </div>
           <input type="datetime-local" id="task-due-date" disabled>
         </div>
@@ -280,7 +328,6 @@
             <button type="button" class="color-option" data-color="#95BDFF" style="background-color: #95BDFF"></button>
             <button type="button" class="color-option" data-color="#B4CDE6" style="background-color: #B4CDE6"></button>
           </div>
-          <p style="color: #444444; font-size: 0.8rem; margin-top: 0.5rem;">[Shift] + [Scroll] to see more</p>
         </div>
 
         <div class="image-picker">
@@ -303,9 +350,23 @@
       .catch(err => console.error("Service Worker Registration Failed:", err));
   }
 
-let deferredPrompt; // Declare globally so it's accessible everywhere
+  // Add theme toggle functionality
+  const themeToggle = document.getElementById('theme-toggle');
+  
+  // Load saved theme preference
+  if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light-mode');
+    themeToggle.checked = false;
+  }
 
-window.addEventListener("beforeinstallprompt", (event) => {
+  // Handle theme toggle
+  themeToggle.addEventListener('change', () => {
+    document.body.classList.toggle('light-mode', !themeToggle.checked);
+    localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
+  });
+
+  let deferredPrompt;
+  window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     deferredPrompt = event; // Store event for later use
 
@@ -331,9 +392,9 @@ window.addEventListener("beforeinstallprompt", (event) => {
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === "accepted") {
-                    console.log("User installed the app 🎉");
+                    console.log("User installed the app ");
                 } else {
-                    console.log("User dismissed the install prompt ❌");
+                    console.log("User dismissed the install prompt ");
                 }
                 deferredPrompt = null;
                 installButton.remove(); // Remove the button after installing
@@ -342,8 +403,6 @@ window.addEventListener("beforeinstallprompt", (event) => {
     });
 });
 
-
-    
 </script>
 </body>
 </html>
