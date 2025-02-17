@@ -303,23 +303,11 @@
       .catch(err => console.error("Service Worker Registration Failed:", err));
   }
 
-  let deferredPrompt; // Global variable to store the install event
+let deferredPrompt; // Declare globally so it's accessible everywhere
 
 window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault(); // Stop automatic prompt
+    event.preventDefault();
     deferredPrompt = event; // Store event for later use
-});
-
-window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-
-    // Show an install button when the event is available
-    let deferredPrompt;
-
-window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
 
     // Create the install button
     const installButton = document.createElement("button");
@@ -335,7 +323,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
     installButton.style.border = "none";
     installButton.style.borderRadius = "8px";
     installButton.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
-    installButton.style.zIndex = "1000"; // Make sure it's always on top
+    installButton.style.zIndex = "1000"; // Always on top
     document.body.appendChild(installButton);
 
     installButton.addEventListener("click", () => {
@@ -352,8 +340,8 @@ window.addEventListener("beforeinstallprompt", (event) => {
             });
         }
     });
-  });
 });
+
 
     
 </script>
