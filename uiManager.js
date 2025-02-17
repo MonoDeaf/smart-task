@@ -1008,7 +1008,7 @@ export class UIManager {
     });
 
     const taskWindow = window.open(
-      `/task-view.html?${params.toString()}`,
+      `/smart-task/task-view.html?${params.toString()}`,
       '_blank',
       'width=300,height=400,resizable=yes,scrollbars=yes,alwaysOnTop=yes'
     );
