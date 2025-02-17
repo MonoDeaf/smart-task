@@ -1,5 +1,6 @@
 Updating Process:
 
-1. Remove Download/install button from Index.html
-2. Go to uimanager - search 'window.open'
-3. Change url beginning to "/smart-task/"
+1. In Index.html, search 'Download App'
+2. Remove Download/install button from Index.html
+3. Go to uimanager - search 'window.open'
+4. Change url beginning to "/smart-task/"
